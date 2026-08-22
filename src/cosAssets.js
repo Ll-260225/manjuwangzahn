@@ -1,19 +1,19 @@
-```js
 import COS from "cos-js-sdk-v5";
 
 export const COS_BUCKET = "liwanmin-0115-1454067572";
 export const COS_REGION = "ap-guangzhou";
-export const COS_PUBLIC_BASE_URL = "https://" + COS_BUCKET + ".cos." + COS_REGION + ".myqcloud.com";
+export const COS_PUBLIC_BASE_URL =
+  "https://" + COS_BUCKET + ".cos." + COS_REGION + ".myqcloud.com";
 export const CONTENT_MANIFEST_KEY = "site/liwanmin-portfolio.json";
 
 const CONFIG_STORAGE_KEY = "liwanmin_cos_admin_config";
 
 export function cosAsset(fileName) {
-  return `${COS_PUBLIC_BASE_URL}/assets/${fileName}`;
+  return COS_PUBLIC_BASE_URL + "/assets/" + fileName;
 }
 
 export function cosUrl(key) {
-  return `${COS_PUBLIC_BASE_URL}/${key}`;
+  return COS_PUBLIC_BASE_URL + "/" + key;
 }
 
 export function loadCosConfig() {
@@ -36,13 +36,13 @@ export function saveCosConfig(config) {
 
 export function isCosConfigured() {
   const config = loadCosConfig();
-  return Boolean(config?.secretId && config?.secretKey);
+  return Boolean(config && config.secretId && config.secretKey);
 }
 
 function createClient() {
   const config = loadCosConfig();
 
-  if (!config?.secretId || !config?.secretKey) {
+  if (!config || !config.secretId || !config.secretKey) {
     throw new Error("请先填写具有该存储桶写入权限的 COS 密钥。");
   }
 
@@ -81,52 +81,45 @@ export function uploadContentFile(file, folder) {
       .replace(/[^a-zA-Z0-9._-]+/g, "-")
       .replace(/^-+|-+$/g, "") || "file";
 
-  const key = `${folder}/${Date.now()}-${safeName}`;
-
+  const key = folder + "/" + Date.now() + "-" + safeName;
   return uploadToCos(file, key);
 }
 
 export async function syncManifest(content) {
-  const blob = new Blob(
-    [
-      JSON.stringify(
-        {
-          ...content,
-          updatedAt: new Date().toISOString(),
-        },
-        null,
-        2,
-      ),
-    ],
-    {
-      type: "application/json",
-    },
-  );
+  const nextContent = Object.assign({}, content, {
+    updatedAt: new Date().toISOString(),
+  });
+
+  const blob = new Blob([JSON.stringify(nextContent, null, 2)], {
+    type: "application/json",
+  });
 
   return uploadToCos(blob, CONTENT_MANIFEST_KEY);
 }
 
 export async function loadManifest() {
   const response = await fetch(
-    `${cosUrl(CONTENT_MANIFEST_KEY)}?v=${Date.now()}`,
+    cosUrl(CONTENT_MANIFEST_KEY) + "?v=" + Date.now(),
   );
 
   if (response.status === 404) return null;
 
   if (!response.ok) {
     throw new Error(
-      `读取 COS 内容清单失败（HTTP ${response.status}）`,
+      "读取 COS 内容清单失败（HTTP " + response.status + "）",
     );
   }
 
   return response.json();
 }
 
-// COS 文件尚未上传或暂时不可用时，继续使用随网站构建发布的本地资源。
 export function useLocalAssetFallback(event) {
   const fallbackUrl = event.currentTarget.dataset.fallbackSrc;
 
-  if (!fallbackUrl || event.currentTarget.dataset.usingLocalFallback === "true") {
+  if (
+    !fallbackUrl ||
+    event.currentTarget.dataset.usingLocalFallback === "true"
+  ) {
     return;
   }
 
@@ -135,6 +128,6 @@ export function useLocalAssetFallback(event) {
   const basePath = import.meta.env.BASE_URL;
 
   event.currentTarget.src = fallbackUrl.startsWith("/")
-    ? `${basePath}${fallbackUrl.slice(1)}`
+    ? basePath + fallbackUrl.slice(1)
     : fallbackUrl;
 }
