@@ -35,21 +35,46 @@ const galleryAssets = [
 export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeAsset, setActiveAsset] = useState(null);
-  const [content, setContent] = useState({ galleryAssets, projects: [], siteMedia: {} });
+  const [activeProject, setActiveProject] = useState(null);
+  const [content, setContent] = useState({
+    galleryAssets,
+    projects: [],
+    siteMedia: {},
+  });
 
   useEffect(() => {
-    loadManifest().then((saved) => { if (saved) setContent((current) => ({ ...current, ...saved, galleryAssets: saved.galleryAssets?.length ? saved.galleryAssets : current.galleryAssets, projects: saved.projects || [] })); }).catch(() => {});
+    loadManifest()
+      .then((saved) => {
+        if (!saved) return;
+
+        setContent((current) => ({
+          ...current,
+          ...saved,
+          galleryAssets: saved.galleryAssets?.length
+            ? saved.galleryAssets
+            : current.galleryAssets,
+          projects: saved.projects || [],
+          siteMedia: saved.siteMedia || {},
+        }));
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     const nodes = document.querySelectorAll("[data-reveal]");
+
     const observer = new IntersectionObserver(
-      (entries) => entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add("is-visible");
-      }),
+      (entries) =>
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          }
+        }),
       { threshold: 0.12 },
     );
+
     nodes.forEach((node) => observer.observe(node));
+
     return () => observer.disconnect();
   }, []);
 
@@ -57,21 +82,26 @@ export function App() {
     const close = (event) => {
       if (event.key === "Escape") {
         setActiveAsset(null);
+        setActiveProject(null);
         setMenuOpen(false);
       }
     };
+
     window.addEventListener("keydown", close);
+
     return () => window.removeEventListener("keydown", close);
   }, []);
 
   useEffect(() => {
-    if (!activeAsset) return undefined;
+    if (!activeAsset && !activeProject) return undefined;
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [activeAsset]);
+  }, [activeAsset, activeProject]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -81,6 +111,7 @@ export function App() {
         <a className="chapter-mark" href="#home" aria-label="返回首页">
           <span /> 01 · 首页
         </a>
+
         <nav className={menuOpen ? "nav is-open" : "nav"} aria-label="主导航">
           <a href="#about" onClick={closeMenu}>关于</a>
           <i>/</i>
@@ -92,10 +123,20 @@ export function App() {
           <i>/</i>
           <a href="#contact" onClick={closeMenu}>联系</a>
         </nav>
-        <a className="header-contact" href="mailto:13673958331@163.com?subject=作品合作咨询">
+
+        <a
+          className="header-contact"
+          href="mailto:13673958331@163.com?subject=作品合作咨询"
+        >
           联系我 <ArrowUpRight size={16} />
         </a>
-        <button className="menu-toggle" onClick={() => setMenuOpen((value) => !value)} aria-label="打开导航">
+
+        <button
+          className="menu-toggle"
+          type="button"
+          onClick={() => setMenuOpen((value) => !value)}
+          aria-label="打开导航"
+        >
           {menuOpen ? <X size={22} /> : <List size={22} />}
         </button>
       </header>
@@ -112,13 +153,19 @@ export function App() {
           onError={useLocalAssetFallback}
           poster={content.siteMedia.heroPoster || cosAsset("hero-editor-studio.png")}
           aria-hidden="true"
-        >
-          <source src={cosAsset("hero-editor-studio.mp4")} type="video/mp4" />
-        </video>
+        />
+
         <div className="hero-shade" />
+
         <div className="hero-content page-shell">
           <div className="hero-copy">
-            <BlurText as="p" text="EDITOR · AI DESIGNER · AI COMIC" delay={90} className="eyebrow" />
+            <BlurText
+              as="p"
+              text="EDITOR · AI DESIGNER · AI COMIC"
+              delay={90}
+              className="eyebrow"
+            />
+
             <ParticleText
               id="hero-title"
               className="hero-title-particles"
@@ -140,40 +187,91 @@ export function App() {
               align="left"
               gradient
             />
-            <BlurText as="p" text="剪辑师 / AI设计师 / AI漫剧" delay={75} className="hero-role" />
+
+            <BlurText
+              as="p"
+              text="剪辑师 / AI设计师 / AI漫剧"
+              delay={75}
+              className="hero-role"
+            />
+
             <a className="play-link" href="#projects" data-reveal>
-              <span><Play size={13} weight="fill" /></span>
+              <span>
+                <Play size={13} weight="fill" />
+              </span>
               PLAY REEL
             </a>
           </div>
-          <BlurText as="p" text={"用影像讲好故事\n用 AI 拓展想象的边界"} delay={75} className="hero-note" />
+
+          <BlurText
+            as="p"
+            text={"用影像讲好故事\n用 AI 拓展想象的边界"}
+            delay={75}
+            className="hero-note"
+          />
         </div>
       </section>
 
       <section className="about" id="about">
         <div className="about-image" data-reveal>
-          <img src={content.siteMedia.portrait || cosAsset("portrait-editor-bw.png")} data-fallback-src="/assets/portrait-editor-bw.png" onError={useLocalAssetFallback} alt="李万民在剪辑工作室工作的黑白人物照" />
+          <img
+            src={content.siteMedia.portrait || cosAsset("portrait-editor-bw.png")}
+            data-fallback-src="/assets/portrait-editor-bw.png"
+            onError={useLocalAssetFallback}
+            alt="李万民在剪辑工作室工作的黑白人物照"
+          />
         </div>
+
         <div className="about-copy">
           <BlurText as="p" text="ABOUT" delay={100} className="eyebrow" />
-          <BlurText as="h2" text={"用影像讲好故事，\n用 AI 拓展想象的边界。"} delay={120} />
+          <BlurText
+            as="h2"
+            text={"用影像讲好故事，\n用 AI 拓展想象的边界。"}
+            delay={120}
+          />
+
           <BlurText
             text="我叫李万民，是一名专注内容叙事与视觉表达的 AI 短剧剪辑师。熟悉真人短剧的粗剪、精剪与节奏把控，也能独立完成 AI 漫剧从小说改写、剧本分镜、资产图建立、视频生成到剪辑成片的完整流程。"
             delay={32}
           />
+
           <BlurText
             text="我相信，好故事既要被看见，也值得被更好的方式呈现。AI 是创作伙伴，让想象更高效地落地成片。"
             delay={38}
           />
+
           <div className="about-meta" data-reveal>
-            <div><span>经历</span><strong>2+<small>年</small></strong></div>
-            <div><span>代表项目</span><strong>8<small>部+</small></strong></div>
-            <div><span>制作能力</span><strong>全流程</strong></div>
-            <div><span>任职公司</span><b>好谷智能科技有限公司<br />2024—2026</b></div>
+            <div>
+              <span>经历</span>
+              <strong>2+<small>年</small></strong>
+            </div>
+
+            <div>
+              <span>代表项目</span>
+              <strong>8<small>部+</small></strong>
+            </div>
+
+            <div>
+              <span>制作能力</span>
+              <strong>全流程</strong>
+            </div>
+
+            <div>
+              <span>任职公司</span>
+              <b>好谷智能科技有限公司<br />2024—2026</b>
+            </div>
           </div>
+
           <div className="contact-inline" data-reveal>
-            <a href="tel:16625116217"><Phone size={17} />166 2511 6217</a>
-            <a href="mailto:13673958331@163.com"><EnvelopeSimple size={17} />13673958331@163.com</a>
+            <a href="tel:16625116217">
+              <Phone size={17} />
+              166 2511 6217
+            </a>
+
+            <a href="mailto:13673958331@163.com">
+              <EnvelopeSimple size={17} />
+              13673958331@163.com
+            </a>
           </div>
         </div>
       </section>
@@ -185,6 +283,7 @@ export function App() {
             <BlurText as="h2" text="精选项目" delay={150} />
           </div>
         </div>
+
         <div className="project-categories page-shell">
           {[
             ["01", "短剧", "SHORT DRAMA"],
@@ -195,6 +294,7 @@ export function App() {
                 <span>{number}</span>
                 <i aria-hidden="true" />
               </div>
+
               <div className="project-category-title">
                 <BlurText as="small" text={label} delay={80} />
                 <BlurText as="h3" text={title} delay={120} />
@@ -202,15 +302,52 @@ export function App() {
             </article>
           ))}
         </div>
-        {content.projects.length > 0 && <div className="managed-projects page-shell">{content.projects.map((project) => <article key={project.id} className="managed-project" style={{ backgroundImage: `linear-gradient(0deg, rgba(0,0,0,.82), rgba(0,0,0,.12)), url(${project.coverUrl})` }}><small>{project.type}</small><h3>{project.title}</h3><p>{project.description}</p></article>)}</div>}
+
+        {content.projects.length > 0 && (
+          <div className="managed-projects page-shell">
+            {content.projects.map((project) => (
+              <article
+                key={project.id}
+                className="managed-project"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(0deg, rgba(0,0,0,.82), rgba(0,0,0,.12)), url(" +
+                    project.coverUrl +
+                    ")",
+                }}
+              >
+                <small>{project.type}</small>
+                <h3>{project.title}</h3>
+                <p>{project.description}</p>
+
+                {project.videoUrl && (
+                  <button
+                    className="managed-project-play"
+                    type="button"
+                    onClick={() => setActiveProject(project)}
+                  >
+                    <Play size={15} weight="fill" />
+                    播放作品
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="gallery" id="gallery" aria-labelledby="gallery-title">
         <div className="section-heading gallery-heading page-shell">
           <div>
-            <BlurText as="p" text="AI VISUAL ARCHIVE" delay={80} className="eyebrow" />
+            <BlurText
+              as="p"
+              text="AI VISUAL ARCHIVE"
+              delay={80}
+              className="eyebrow"
+            />
             <BlurText as="h2" text="AI 图片资产" delay={130} id="gallery-title" />
           </div>
+
           <BlurText
             text="角色、场景与叙事画面的视觉资产实验"
             delay={45}
@@ -221,16 +358,24 @@ export function App() {
         <div className="gallery-grid page-shell">
           {content.galleryAssets.map((asset, index) => (
             <button
-              className={`gallery-item gallery-item--${index + 1}`}
+              className={"gallery-item gallery-item--" + (index + 1)}
               type="button"
               key={asset.id}
               onClick={() => setActiveAsset(asset)}
-              aria-label={`查看${asset.label}`}
+              aria-label={"查看" + asset.label}
               data-reveal
             >
-              <img src={asset.url || cosAsset(asset.fileName)} data-fallback-src={asset.fileName ? `/assets/${asset.fileName}` : ""} onError={useLocalAssetFallback} alt={asset.alt} loading="lazy" />
+              <img
+                src={asset.url || cosAsset(asset.fileName)}
+                data-fallback-src={asset.fileName ? "/assets/" + asset.fileName : ""}
+                onError={useLocalAssetFallback}
+                alt={asset.alt}
+                loading="lazy"
+              />
+
               <span className="gallery-item-shade" />
               <span className="gallery-item-index">{asset.id} / 06</span>
+
               <span className="gallery-item-copy">
                 <BlurText as="small" text="AI GENERATED ASSET" delay={55} />
                 <BlurText as="strong" text={asset.label} delay={85} />
@@ -245,6 +390,7 @@ export function App() {
           <BlurText as="p" text="WORKFLOW" delay={100} className="eyebrow" />
           <BlurText as="h2" text="我的创作流程" delay={115} id="workflow-title" />
         </div>
+
         <div className="workflow-steps">
           {workflow.map((step, index) => (
             <div key={step}>
@@ -258,6 +404,7 @@ export function App() {
 
       <section className="strengths page-shell" id="strengths">
         <BlurText as="p" text="STRENGTHS" delay={100} className="eyebrow" />
+
         <div className="strength-grid">
           {strengths.map(([id, title, body]) => (
             <article key={id}>
@@ -267,17 +414,29 @@ export function App() {
             </article>
           ))}
         </div>
+
         <div className="tool-line">
           <span>TOOLS</span>
-          <BlurText text="ChatGPT · Codex · Photoshop · Premiere Pro · 剪映 · DaVinci Resolve" delay={45} />
+          <BlurText
+            text="ChatGPT · Codex · Photoshop · Premiere Pro · 剪映 · DaVinci Resolve"
+            delay={45}
+          />
         </div>
       </section>
 
       <section className="contact" id="contact">
-        <img src={content.siteMedia.contactBackground || cosAsset("contact-lighthouse.png")} data-fallback-src="/assets/contact-lighthouse.png" onError={useLocalAssetFallback} alt="风暴海岸与远处灯塔的电影画面" />
+        <img
+          src={content.siteMedia.contactBackground || cosAsset("contact-lighthouse.png")}
+          data-fallback-src="/assets/contact-lighthouse.png"
+          onError={useLocalAssetFallback}
+          alt="风暴海岸与远处灯塔的电影画面"
+        />
+
         <div className="contact-overlay" />
+
         <div className="contact-content page-shell">
           <BlurText as="p" text="CONTACT" delay={100} className="eyebrow" />
+
           <ParticleText
             className="contact-title-particles"
             text={"期待与你合作，\n把好故事变成好作品。"}
@@ -298,28 +457,44 @@ export function App() {
             align="left"
             gradient
           />
+
           <div className="contact-actions">
             <a href="mailto:13673958331@163.com?subject=作品合作咨询">
-              <BlurText as="span" text="联系我，聊聊你的项目" delay={55} /> <ArrowRight size={21} />
+              <BlurText as="span" text="联系我，聊聊你的项目" delay={55} />
+              <ArrowRight size={21} />
             </a>
-            <a href="tel:16625116217"><BlurText as="span" text="166 2511 6217" delay={55} /></a>
+
+            <a href="tel:16625116217">
+              <BlurText as="span" text="166 2511 6217" delay={55} />
+            </a>
           </div>
         </div>
+
         <footer className="footer page-shell">
           <BlurText as="span" text="© 2024—2026 李万民 · 保留所有权利" delay={35} />
           <BlurText as="span" text="AI EDITOR · AVAILABLE FOR WORK" delay={45} />
-          <a href="#home" aria-label="返回顶部"><ArrowUp size={16} /> TOP</a>
+
+          <a href="#home" aria-label="返回顶部">
+            <ArrowUp size={16} />
+            TOP
+          </a>
         </footer>
       </section>
 
       {activeAsset && (
-        <div className="gallery-lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title">
+        <div
+          className="gallery-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lightbox-title"
+        >
           <button
             className="gallery-lightbox-backdrop"
             type="button"
             onClick={() => setActiveAsset(null)}
             aria-label="关闭图片预览"
           />
+
           <figure className="gallery-lightbox-frame">
             <button
               className="gallery-lightbox-close"
@@ -329,7 +504,16 @@ export function App() {
             >
               <X size={22} />
             </button>
-            <img src={activeAsset.url || cosAsset(activeAsset.fileName)} data-fallback-src={activeAsset.fileName ? `/assets/${activeAsset.fileName}` : ""} onError={useLocalAssetFallback} alt={activeAsset.alt} />
+
+            <img
+              src={activeAsset.url || cosAsset(activeAsset.fileName)}
+              data-fallback-src={
+                activeAsset.fileName ? "/assets/" + activeAsset.fileName : ""
+              }
+              onError={useLocalAssetFallback}
+              alt={activeAsset.alt}
+            />
+
             <figcaption>
               <span>{activeAsset.id} / 06</span>
               <strong id="lightbox-title">{activeAsset.label}</strong>
@@ -337,7 +521,46 @@ export function App() {
           </figure>
         </div>
       )}
+
+      {activeProject && (
+        <div
+          className="project-video-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="project-video-title"
+        >
+          <button
+            className="project-video-backdrop"
+            type="button"
+            onClick={() => setActiveProject(null)}
+            aria-label="关闭视频播放"
+          />
+
+          <section className="project-video-frame">
+            <button
+              className="project-video-close"
+              type="button"
+              onClick={() => setActiveProject(null)}
+              aria-label="关闭"
+            >
+              <X size={22} />
+            </button>
+
+            <video controls autoPlay playsInline poster={activeProject.coverUrl}>
+              <source src={activeProject.videoUrl} type="video/mp4" />
+              你的浏览器不支持视频播放。
+            </video>
+
+            <div>
+              <small>{activeProject.type}</small>
+              <strong id="project-video-title">{activeProject.title}</strong>
+            </div>
+          </section>
+        </div>
+      )}
+
       <AdminPanel content={content} onContentChange={setContent} />
     </main>
   );
 }
+
